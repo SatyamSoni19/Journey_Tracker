@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+  journeys      Journey[]
+  aiPlans       AIPlan[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+enum JourneyStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
+}
+
+model Journey {
+  id                String        @id @default(cuid())
+  title             String
+  destination       String
+  description       String?
+  coverImage        String?
+  coverImagePublicId String?
+  budget            Float
+  startDate         DateTime
+  endDate           DateTime
+  status            JourneyStatus @default(PLANNED)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Google Maps location data
+  placeId           String?
+  latitude          Float?
+  longitude         Float?
+  formattedAddress  String?
+  city              String?
+  state             String?
+  country           String?
+  googlePlaceName   String?
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  timelineEntries TimelineEntry[]
+  media           Media[]
+  budgetMembers   BudgetMember[]
+  expenses        Expense[]
+  categories      ExpenseCategory[]
+  aiPlans         AIPlan[]
+
+  @@index([ownerId])
+}
+
+model TimelineEntry {
+  id          String   @id @default(cuid())
+  journeyId   String
+  journey     Journey  @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  date        DateTime
+  time        String
+  location    String
+  title       String
+  description String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Google Maps location data
+  placeId           String?
+  latitude          Float?
+  longitude         Float?
+  formattedAddress  String?
+  googlePlaceName   String?
+
+  media       TimelineMedia[]
+
+  @@index([journeyId])
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+}
+
+model Media {
+  id           String    @id @default(cuid())
+  journeyId    String
+  journey      Journey   @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  type         MediaType
+  publicId     String
+  secureUrl    String
+  resourceType String    @default("image")
+  format       String?
+  width        Int?
+  height       Int?
+  duration     Float?
+  bytes        Int
+  caption      String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  timelineRefs TimelineMedia[]
+
+  @@index([journeyId])
+}
+
+model TimelineMedia {
+  id              String         @id @default(cuid())
+  timelineEntryId String
+  timelineEntry   TimelineEntry  @relation(fields: [timelineEntryId], references: [id], onDelete: Cascade)
+  mediaId         String
+  media           Media          @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  sortOrder       Int            @default(0)
+
+  @@index([timelineEntryId])
+  @@index([mediaId])
+}
+
+model BudgetMember {
+  id        String   @id @default(cuid())
+  journeyId String
+  journey   Journey  @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  name      String
+  email     String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+
+  paidExpenses Expense[]      @relation("ExpensePayer")
+  splitShares  ExpenseSplit[]
+
+  @@index([journeyId])
+}
+
+model ExpenseCategory {
+  id        String   @id @default(cuid())
+  journeyId String
+  journey   Journey  @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  name      String
+  color     String   @default("#FBA15A")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  expenses  Expense[]
+
+  @@index([journeyId])
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  journeyId   String
+  journey     Journey         @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  title       String
+  amount      Float
+  currency    String          @default("INR")
+  categoryId  String
+  category    ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  paidById    String
+  paidBy      BudgetMember    @relation("ExpensePayer", fields: [paidById], references: [id], onDelete: Restrict)
+  date      DateTime
+  notes     String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  splits    ExpenseSplit[]
+
+  @@index([journeyId])
+  @@index([paidById])
+}
+
+model ExpenseSplit {
+  id        String       @id @default(cuid())
+  expenseId String
+  expense   Expense      @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    BudgetMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  amount    Float
+  settled   Boolean      @default(false)
+
+  @@index([expenseId])
+  @@index([memberId])
+}
+
+model AIPlan {
+  id          String   @id @default(cuid())
+  journeyId   String?
+  journey     Journey? @relation(fields: [journeyId], references: [id], onDelete: SetNull)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt      String
+  destination String
+  result      Json
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([journeyId])
+}

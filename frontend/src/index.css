@@ -1,0 +1,340 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@theme {
+  --color-brand: #FBA15A;
+  --color-brand-light: #FCCB8F;
+  --color-brand-dark: #E8893E;
+  --color-brand-muted: #FBA15A33;
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* ───────────────────────────────────────────────
+   Light Theme
+   ─────────────────────────────────────────────── */
+:root {
+    --background: #FFFDFB;
+    --foreground: #111827;
+    --card: #FFFFFF;
+    --card-foreground: #111827;
+    --popover: #FFFFFF;
+    --popover-foreground: #111827;
+    --primary: #FBA15A;
+    --primary-foreground: #111827;
+    --secondary: #F5F0EB;
+    --secondary-foreground: #111827;
+    --muted: #F5F0EB;
+    --muted-foreground: #71717A;
+    --accent: #FBA15A1A;
+    --accent-foreground: #111827;
+    --destructive: #EF4444;
+    --border: #ECECEC;
+    --input: #ECECEC;
+    --ring: #FBA15A;
+    --chart-1: #FBA15A;
+    --chart-2: #34D399;
+    --chart-3: #60A5FA;
+    --chart-4: #A78BFA;
+    --chart-5: #F472B6;
+    --radius: 0.75rem;
+    --sidebar: #FFFDFB;
+    --sidebar-foreground: #111827;
+    --sidebar-primary: #FBA15A;
+    --sidebar-primary-foreground: #111827;
+    --sidebar-accent: #F5F0EB;
+    --sidebar-accent-foreground: #111827;
+    --sidebar-border: #ECECEC;
+    --sidebar-ring: #FBA15A;
+
+
+}
+
+/* ───────────────────────────────────────────────
+   Dark Theme
+   ─────────────────────────────────────────────── */
+.dark {
+    --background: #0F1115;
+    --foreground: #F8F9FA;
+    --card: #171A21;
+    --card-foreground: #F8F9FA;
+    --popover: #171A21;
+    --popover-foreground: #F8F9FA;
+    --primary: #FBA15A;
+    --primary-foreground: #0F1115;
+    --secondary: #1E2028;
+    --secondary-foreground: #F8F9FA;
+    --muted: #1E2028;
+    --muted-foreground: #A1A1AA;
+    --accent: #FBA15A1A;
+    --accent-foreground: #F8F9FA;
+    --destructive: #EF4444;
+    --border: #2B2E36;
+    --input: #2B2E36;
+    --ring: #FBA15A;
+    --chart-1: #FBA15A;
+    --chart-2: #34D399;
+    --chart-3: #60A5FA;
+    --chart-4: #A78BFA;
+    --chart-5: #F472B6;
+    --sidebar: #171A21;
+    --sidebar-foreground: #F8F9FA;
+    --sidebar-primary: #FBA15A;
+    --sidebar-primary-foreground: #0F1115;
+    --sidebar-accent: #1E2028;
+    --sidebar-accent-foreground: #F8F9FA;
+    --sidebar-border: #2B2E36;
+    --sidebar-ring: #FBA15A;
+}
+
+/* ───────────────────────────────────────────────
+   Base Style Overrides (Pure Standard CSS)
+   ─────────────────────────────────────────────── */
+* {
+    border-color: var(--border);
+    outline-color: rgba(var(--ring), 0.5);
+}
+
+body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%23FBA15A' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 4l16 5.333-7.111 3.556L9.333 20 4 4z'/%3E%3C/svg%3E"), auto;
+}
+
+/* Global pointer cursor on all interactive elements */
+button,
+[role="button"],
+[type="button"],
+[type="submit"],
+[type="reset"],
+select,
+label[for],
+a {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%23FBA15A' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 4l16 5.333-7.111 3.556L9.333 20 4 4z'/%3E%3C/svg%3E"), pointer;
+}
+
+/* ───────────────────────────────────────────────
+   Dashboard Background Images
+   ─────────────────────────────────────────────── */
+.dashboard-bg {
+    background-image: 
+        linear-gradient(rgba(255, 253, 251, 0.7), rgba(255, 253, 251, 0.7)),
+        url('./assets/images/dashboard_light_bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+}
+
+.dark .dashboard-bg {
+    background-image: 
+        linear-gradient(rgba(15, 17, 21, 0.75), rgba(15, 17, 21, 0.75)),
+        url('./assets/images/dashboard_dark_bg.jpg');
+}
+
+
+html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+}
+
+/* ───────────────────────────────────────────────
+   Utility Classes (Standard CSS Rules)
+   ─────────────────────────────────────────────── */
+
+/* Glassmorphism */
+.glass {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-light {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Premium shadows */
+.shadow-brand {
+    box-shadow: 0 0 40px rgba(251, 161, 90, 0.15);
+}
+
+.shadow-card {
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.04),
+        0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-card-hover {
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.06),
+        0 12px 32px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-elevated {
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.08),
+        0 20px 48px rgba(0, 0, 0, 0.12);
+}
+
+/* Text gradient */
+.text-gradient {
+    background: linear-gradient(135deg, #FBA15A 0%, #FCCB8F 50%, #FBA15A 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.text-gradient-subtle {
+    background: linear-gradient(135deg, #F8F9FA 0%, #A1A1AA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Shimmer animation */
+.shimmer {
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(251, 161, 90, 0.1) 50%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Glow pulse */
+.glow-pulse {
+    animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(251, 161, 90, 0.1); }
+    50% { box-shadow: 0 0 40px rgba(251, 161, 90, 0.25); }
+}
+
+/* ───────────────────────────────────────────────
+   Custom Themed Scrollbar
+   ─────────────────────────────────────────────── */
+
+/* Webkit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 999px;
+    transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(251, 161, 90, 0.45);
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+/* Utility: fully hide scrollbar */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+
+/* ───────────────────────────────────────────────
+   Select / Dropdown Option Theming
+   ─────────────────────────────────────────────── */
+select option {
+    background-color: var(--card);
+    color: var(--card-foreground);
+}
+
+/* Premium brand button glow on hover */
+.btn-brand-glow {
+    background: linear-gradient(135deg, #FBA15A 0%, #f08c38 60%, #e87820 100%);
+    box-shadow: 0 4px 20px rgba(251, 161, 90, 0.35);
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+.btn-brand-glow:hover {
+    box-shadow: 0 6px 28px rgba(251, 161, 90, 0.5);
+}
+
+/* Auth card premium border glow */
+.auth-card-glow {
+    box-shadow:
+        0 0 0 1px rgba(251, 161, 90, 0.08),
+        0 8px 32px rgba(0, 0, 0, 0.12),
+        0 32px 64px rgba(0, 0, 0, 0.08);
+}
+
+/* ───────────────────────────────────────────────
+   Hide native calendar icon on date inputs
+   (we use a custom clickable icon instead)
+   ─────────────────────────────────────────────── */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    position: absolute;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
