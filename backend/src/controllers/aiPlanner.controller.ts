@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
-import { generateTripPlan } from "../services/aiPlanner.service.js";
+import { generateTripPlan, chatWithPlan } from "../services/aiPlanner.service.js";
 import {
   createAIPlan,
   findAIPlansByUser,
@@ -112,5 +112,27 @@ export const generateChat = asyncHandler(async (req: Request, res: Response) => 
 
   res.status(200).json(
     new ApiResponse(200, "Chat generated successfully", { response: responseText })
+  );
+});
+
+export const chatWithPlanHandler = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+
+  const planId = req.params.id as string;
+  const { prompt, history } = req.body;
+
+  if (!prompt) {
+    throw ApiError.badRequest("prompt is required");
+  }
+
+  const plan = await findAIPlanById(planId);
+  if (!plan) throw ApiError.notFound("Plan not found");
+  if (plan.userId !== req.user.id)
+    throw ApiError.forbidden("You do not have access to this plan");
+
+  const responseText = await chatWithPlan(plan, prompt, history || []);
+
+  res.status(200).json(
+    new ApiResponse(200, "Chat response generated", { response: responseText })
   );
 });

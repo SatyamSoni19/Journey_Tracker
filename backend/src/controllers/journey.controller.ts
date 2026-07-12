@@ -72,7 +72,7 @@ export const deleteJourney = asyncHandler(async (req: Request, res: Response) =>
 export const createFromAIPlan = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
 
-  const aiPlanId = req.params.planId;
+  const aiPlanId = req.params.planId as string;
   const journey = await createJourneyFromAIPlan(req.user.id, aiPlanId);
 
   res.status(201).json(new ApiResponse(201, "Journey created from AI plan", { journey }));

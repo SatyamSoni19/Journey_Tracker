@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
@@ -12,13 +12,18 @@ import {
   Compass,
   ArrowLeft,
   Edit2,
-  Check
+  Check,
+  Send,
+  Bot,
+  User,
 } from "lucide-react";
 import { aiPlannerApi } from "@/lib/api";
 import { journeyApi } from "@/lib/api";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { ItineraryRenderer } from "../../components/features/ai/ItineraryRenderer";
+import { PremiumModal } from "../../components/common/PremiumModal";
+import ReactMarkdown from "react-markdown";
 import type { AIPlannerResponse, AIPlannerRequest } from "@/types/aiPlanner.types";
 
 interface SavedPlan {
@@ -28,6 +33,12 @@ interface SavedPlan {
   result: AIPlannerResponse;
   createdAt: string;
 }
+
+type ChatMessage = {
+  id: string;
+  role: "user" | "model";
+  content: string;
+};
 
 export function AIPlannerPage() {
   const [plans, setPlans] = useState<SavedPlan[]>([]);
@@ -42,6 +53,12 @@ export function AIPlannerPage() {
   const [editNameValue, setEditNameValue] = useState("");
   const [followUpPrompt, setFollowUpPrompt] = useState("");
   
+  // Chat state for follow-up conversations within a plan
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [isChatting, setIsChatting] = useState(false);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  
+  const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -63,6 +80,25 @@ export function AIPlannerPage() {
     }
   }, [location.state, hasAutoTriggered, navigate]);
 
+  // Clear chat when switching plans
+  useEffect(() => {
+    setChatMessages([]);
+    setFollowUpPrompt("");
+  }, [activePlanId]);
+
+  // Auto-scroll to bottom when new chat messages arrive
+  useEffect(() => {
+    if (chatMessages.length > 0 && scrollRef.current) {
+      // Small delay to let DOM update
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({
+          top: scrollRef.current.scrollHeight,
+          behavior: "smooth",
+        });
+      }, 100);
+    }
+  }, [chatMessages, isChatting]);
+
   const fetchPlans = async () => {
     try {
       const res = await aiPlannerApi.listPlans();
@@ -75,7 +111,7 @@ export function AIPlannerPage() {
 
   const handleGeneratePlan = async (e?: React.FormEvent, overridePrompt?: string) => {
     e?.preventDefault();
-    const currentPrompt = overridePrompt || followUpPrompt || prompt;
+    const currentPrompt = overridePrompt || prompt;
     if (!currentPrompt.trim()) return;
     
     try {
@@ -93,12 +129,55 @@ export function AIPlannerPage() {
       await fetchPlans();
       setActivePlanId(res.planId);
       setPrompt("");
-      setFollowUpPrompt("");
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to generate travel plan. Please try again.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleFollowUpChat = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!followUpPrompt.trim() || !activePlanId || isChatting) return;
+
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: "user",
+      content: followUpPrompt.trim(),
+    };
+    setChatMessages((prev) => [...prev, userMsg]);
+    setFollowUpPrompt("");
+    setIsChatting(true);
+
+    try {
+      // Build history from existing chat messages
+      const history = chatMessages.map((m) => ({
+        role: m.role,
+        parts: [{ text: m.content }],
+      }));
+
+      const res = await aiPlannerApi.chatWithPlan(activePlanId, {
+        prompt: userMsg.content,
+        history,
+      });
+
+      const aiMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "model",
+        content: res.response,
+      };
+      setChatMessages((prev) => [...prev, aiMsg]);
+    } catch (err: any) {
+      console.error("Chat Error:", err);
+      const errorMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "model",
+        content: `❌ **Error**: ${err.message || "Failed to get response"}`,
+      };
+      setChatMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsChatting(false);
     }
   };
 
@@ -145,7 +224,7 @@ export function AIPlannerPage() {
   const activePlan = plans.find(p => p.id === activePlanId);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-background">
+    <div className="flex h-screen bg-background">
       {/* Sidebar History */}
       <div className="w-80 border-r border-border bg-card/30 flex flex-col hidden md:flex">
         <div className="p-4 border-b border-border/50">
@@ -278,10 +357,32 @@ export function AIPlannerPage() {
               )}
             </div>
           </div>
+
+          {/* Create Journey button in header when plan is active */}
+          {activePlan && !isGenerating && !error && (
+            <button
+              onClick={() => handleCreateJourney(activePlan.id)}
+              disabled={isCreatingJourney}
+              className="bg-brand hover:bg-brand/90 text-brand-foreground px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-brand/25 hover:shadow-brand/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 text-sm"
+            >
+              {isCreatingJourney ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Map className="w-4 h-4" />
+                  Create Journey from Plan
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin relative bg-gradient-to-br from-background via-background to-muted/20">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin relative bg-gradient-to-br from-background via-background to-muted/20">
           <AnimatePresence mode="wait">
             {!activePlanId && !isGenerating && !error && (
               <motion.div
@@ -327,7 +428,11 @@ export function AIPlannerPage() {
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                     <span>3 of 10 free AI generations remaining</span>
                   </div>
-                  <button className="text-xs text-brand hover:underline flex items-center gap-1 font-medium transition-colors">
+                  <button 
+                    onClick={() => setIsPremiumModalOpen(true)}
+                    type="button"
+                    className="text-xs text-brand hover:underline flex items-center gap-1 font-medium transition-colors"
+                  >
                     <Sparkles className="w-3 h-3" />
                     Upgrade to Premium for unlimited planning
                   </button>
@@ -383,7 +488,7 @@ export function AIPlannerPage() {
                 key="result"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="min-h-full pb-32 p-6 md:p-10 max-w-5xl mx-auto"
+                className="p-6 md:p-10 max-w-5xl mx-auto"
               >
                 <div className="bg-card/50 border border-border/50 rounded-2xl p-4 mb-8 flex items-start gap-4">
                   <MessageSquare className="w-5 h-5 text-brand shrink-0 mt-1" />
@@ -394,65 +499,118 @@ export function AIPlannerPage() {
                 </div>
                 
                 <ItineraryRenderer plan={activePlan.result} />
+
+                {/* Chat Messages Section */}
+                {chatMessages.length > 0 && (
+                  <div className="mt-10 border-t border-border/50 pt-8 space-y-5">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4" />
+                      Follow-up Conversation
+                    </h3>
+                    {chatMessages.map((msg) => (
+                      <motion.div
+                        key={msg.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`flex w-full ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div className={`flex gap-3 max-w-[85%] md:max-w-[75%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                            msg.role === "user" ? "bg-brand text-white" : "bg-card border border-border text-brand"
+                          }`}>
+                            {msg.role === "user" ? <User size={16} /> : <Bot size={16} />}
+                          </div>
+                          <div className={`px-4 py-3 rounded-2xl shadow-sm prose prose-sm dark:prose-invert max-w-none ${
+                            msg.role === "user"
+                              ? "bg-brand text-white rounded-tr-sm"
+                              : "bg-card border border-border/50 text-foreground rounded-tl-sm"
+                          }`}>
+                            {msg.content.startsWith("❌") ? (
+                              <div className="flex items-center gap-2 text-destructive">
+                                <AlertCircle size={16} />
+                                <span className="font-medium">{msg.content.replace("❌ **Error**: ", "")}</span>
+                              </div>
+                            ) : (
+                              <div className="leading-relaxed">
+                                <ReactMarkdown>{msg.content}</ReactMarkdown>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+
+                    {/* Typing indicator */}
+                    {isChatting && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex justify-start"
+                      >
+                        <div className="flex gap-3 max-w-[85%] md:max-w-[75%]">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-card border border-border text-brand flex items-center justify-center">
+                            <Bot size={16} />
+                          </div>
+                          <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-card border border-border/50 flex items-center gap-2">
+                            <Loader2 size={16} className="animate-spin text-brand" />
+                            <span className="text-sm text-muted-foreground">Thinking...</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+
+                {/* Spacer for bottom input */}
+                <div className="h-28" />
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Footer actions for active plan */}
+        {/* Bottom Input Bar — for follow-up chat (only when viewing a plan) */}
         <AnimatePresence>
           {activePlan && !isGenerating && !error && (
             <motion.div
-              initial={{ opacity: 0, y: 100 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 100 }}
-              className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-card shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.5)] z-20"
+              exit={{ opacity: 0, y: 20 }}
+              className="shrink-0 border-t border-border/50 bg-card/80 backdrop-blur-sm p-4 z-20"
             >
-              <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-                <form 
-                  onSubmit={handleGeneratePlan} 
-                  className="flex-1 relative flex items-center bg-muted/50 rounded-2xl border border-border focus-within:ring-2 focus-within:ring-brand focus-within:bg-background overflow-hidden transition-all h-14"
-                >
-                  <input
-                    type="text"
-                    placeholder="Ask a follow-up or generate a new plan..."
-                    value={followUpPrompt}
-                    onChange={(e) => setFollowUpPrompt(e.target.value)}
-                    className="flex-1 bg-transparent border-none px-6 text-sm focus:outline-none placeholder:text-muted-foreground"
-                    disabled={isGenerating}
-                  />
-                  <button
-                    type="submit"
-                    disabled={!followUpPrompt.trim() || isGenerating}
-                    className="bg-brand hover:bg-brand/90 text-brand-foreground p-2.5 mr-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </form>
-
+              <form 
+                onSubmit={handleFollowUpChat} 
+                className="max-w-4xl mx-auto relative flex items-center bg-background rounded-2xl border border-border focus-within:ring-2 focus-within:ring-brand/30 overflow-hidden transition-all"
+              >
+                <input
+                  type="text"
+                  placeholder="Ask a follow-up question about this plan..."
+                  value={followUpPrompt}
+                  onChange={(e) => setFollowUpPrompt(e.target.value)}
+                  className="flex-1 bg-transparent border-none px-5 py-4 text-sm focus:outline-none placeholder:text-muted-foreground/60"
+                  disabled={isChatting}
+                />
                 <button
-                  onClick={() => handleCreateJourney(activePlan.id)}
-                  disabled={isCreatingJourney}
-                  className="bg-brand hover:bg-brand/90 text-brand-foreground px-8 py-0 h-14 rounded-2xl font-semibold shadow-lg shadow-brand/25 hover:shadow-brand/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                  type="submit"
+                  disabled={!followUpPrompt.trim() || isChatting}
+                  className="bg-brand hover:bg-brand/90 text-brand-foreground p-2.5 mr-2.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center"
                 >
-                  {isCreatingJourney ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Creating Journey...
-                    </>
+                  {isChatting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <>
-                      <Map className="w-5 h-5" />
-                      Create Journey from Plan
-                      <ArrowRight className="w-5 h-5 ml-1" />
-                    </>
+                    <Send className="w-4 h-4" />
                   )}
                 </button>
-              </div>
+              </form>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
+
+      {/* Premium Upgrade Modal */}
+      <PremiumModal 
+        isOpen={isPremiumModalOpen} 
+        onClose={() => setIsPremiumModalOpen(false)} 
+      />
     </div>
   );
 }

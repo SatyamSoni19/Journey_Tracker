@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { PlaceRecommendationCard } from "@/components/features/ai/PlaceRecommendationCard";
 import { Sparkles, Send, Map, Loader2, Bot, User, AlertCircle } from "lucide-react";
 import { aiPlannerApi, type Journey } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -74,7 +75,7 @@ export function AIPlannerModule({ journey }: AIPlannerModuleProps) {
   const parseContent = (content: string) => {
     // Regex to match [PLACE_RECOMMENDATION: {...}]
     const regex = /\[PLACE_RECOMMENDATION:\s*({[^}]+})\]/g;
-    const parts: (string | JSX.Element)[] = [];
+    const parts: React.ReactNode[] = [];
     let lastIndex = 0;
     let match;
 

@@ -13,6 +13,7 @@ import {
   deletePlanHandler,
   updatePlanHandler,
   generateChat,
+  chatWithPlanHandler,
 } from "../controllers/aiPlanner.controller.js";
 
 const router = Router();
@@ -25,6 +26,7 @@ router.post("/chat", generateChat);
 router.get("/plans", listPlans);
 router.get("/plans/:id", validate(planIdParamSchema), getPlan);
 router.patch("/plans/:id", validate(updatePlanSchema), updatePlanHandler);
+router.post("/plans/:id/chat", validate(planIdParamSchema), chatWithPlanHandler);
 router.delete("/plans/:id", validate(planIdParamSchema), deletePlanHandler);
 
 export default router;

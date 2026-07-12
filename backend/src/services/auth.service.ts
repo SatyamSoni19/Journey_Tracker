@@ -82,10 +82,15 @@ export async function refreshAccessToken(
     throw ApiError.unauthorized("Invalid refresh token");
   }
 
-  if (storedToken.revoked || storedToken.expiresAt < new Date()) {
-    // Reuse of a revoked/expired token is suspicious — kill every session for this user.
+  if (storedToken.revoked) {
+    // Reuse of a revoked token is highly suspicious (possible theft) — kill every session for this user.
     await revokeAllUserRefreshTokens(storedToken.userId);
-    throw ApiError.unauthorized("Refresh token expired or already used. Please log in again.");
+    throw ApiError.unauthorized("Security alert: Token reuse detected. All sessions revoked. Please log in again.");
+  }
+
+  if (storedToken.expiresAt < new Date()) {
+    // Token naturally expired. Just reject this request, don't kill other valid sessions.
+    throw ApiError.unauthorized("Refresh token expired. Please log in again.");
   }
 
   // Rotation: this token is now used, revoke it immediately.

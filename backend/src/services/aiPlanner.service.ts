@@ -351,3 +351,43 @@ Provide short, highly relevant, and helpful advice. Always suggest realistic pla
 
   return await generateChatResponse(systemPrompt, history, prompt);
 }
+
+/**
+ * Chat within an existing AI Plan — for follow-up questions about the plan.
+ * Does NOT generate a new trip plan. Uses the plan's context for conversational replies.
+ */
+export async function chatWithPlan(
+  plan: { destination: string; prompt: string; result: any },
+  userPrompt: string,
+  history: { role: "user" | "model"; parts: { text: string }[] }[] = []
+): Promise<string> {
+  const planResult = plan.result as AIPlannerResponse;
+  
+  // Build a concise context from the plan
+  const tripSummary = planResult.tripSummary;
+  const dayCount = planResult.dailyItinerary?.length || 0;
+  const hotelNames = planResult.hotelRecommendations?.map(h => h.name).join(", ") || "None";
+  const restaurantNames = planResult.restaurantRecommendations?.map(r => r.name).join(", ") || "None";
+
+  const systemPrompt = `You are an expert AI Travel Assistant. You previously generated a travel plan for the user and now they are having a follow-up conversation about it.
+
+IMPORTANT RULES:
+- This is a CONVERSATION, not a plan generator. Respond naturally and conversationally.
+- If the user says something casual like "thanks", "nice plan", "I'll ask later", etc., respond warmly and briefly. Do NOT generate a new travel plan.
+- Only provide detailed travel information if the user specifically asks for it.
+- Keep responses concise and friendly.
+- If the user asks to modify the plan, suggest changes conversationally — don't regenerate the whole plan.
+
+Here is the plan context:
+Destination: ${tripSummary?.destination || plan.destination}
+Duration: ${tripSummary?.totalDays || dayCount} days
+Budget: ${tripSummary?.estimatedBudget || "Not specified"} ${tripSummary?.currency || "INR"}
+Travel Style: ${tripSummary?.travelStyle || "Not specified"}
+Hotels Recommended: ${hotelNames}
+Restaurants Recommended: ${restaurantNames}
+Original User Request: "${plan.prompt}"
+
+Respond in markdown format. Be helpful, warm, and conversational.`;
+
+  return await generateChatResponse(systemPrompt, history, userPrompt);
+}

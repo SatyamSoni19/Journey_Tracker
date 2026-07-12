@@ -442,6 +442,11 @@ export const aiPlannerApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  chatWithPlan: (planId: string, data: { prompt: string; history: { role: string; parts: { text: string }[] }[] }) =>
+    apiRequest<{ response: string }>(`/ai/plans/${planId}/chat`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   listPlans: () => apiRequest<{ plans: SavedAIPlan[] }>("/ai/plans"),
   getPlan: (id: string) => apiRequest<{ plan: SavedAIPlan }>(`/ai/plans/${id}`),
   updatePlan: (id: string, destination: string) => apiRequest<{ plan: SavedAIPlan }>(`/ai/plans/${id}`, {
